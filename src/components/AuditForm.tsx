@@ -42,15 +42,15 @@ export function AuditForm({ onSubmit }: Props) {
 
   if (submitted) {
     return (
-      <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-sm text-emerald-900 shadow-glass">
-        <p className="text-base font-semibold">Thank you - your Lead Leakage Audit request is in.</p>
-        <p className="mt-2">We will review your current inquiry flow and follow up with next steps shortly.</p>
+      <div className="border-2 border-slate-950 bg-lime-300 p-6 shadow-[7px_7px_0_#0f172a]">
+        <p className="text-2xl font-black">Audit request received.</p>
+        <p className="mt-2 font-semibold">We will map your lead route and follow up with the next step.</p>
       </div>
     )
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-6 shadow-glass md:grid-cols-2">
+    <form onSubmit={handleSubmit} className="grid gap-3 border-2 border-slate-950 bg-white p-6 shadow-[7px_7px_0_#0f172a] md:grid-cols-2">
       {[
         ['name', 'Name'],
         ['businessName', 'Business name'],
@@ -61,27 +61,29 @@ export function AuditForm({ onSubmit }: Props) {
         ['city', 'City / service area'],
         ['monthlyLeadEstimate', 'Monthly lead estimate'],
       ].map(([key, label]) => (
-        <label className="text-sm" key={key}>
+        <label className="text-sm font-black uppercase tracking-[0.12em] text-slate-600" key={key}>
           {label}
           <input
             required
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+            className="mt-2 w-full border-2 border-slate-950 bg-white px-3 py-3 text-base font-bold normal-case tracking-normal text-slate-950 outline-none focus:bg-sky-50"
             value={form[key as keyof AuditSubmission]}
             onChange={(e) => setForm((s) => ({ ...s, [key]: e.target.value }))}
           />
         </label>
       ))}
-      <label className="text-sm md:col-span-2">
+      <label className="text-sm font-black uppercase tracking-[0.12em] text-slate-600 md:col-span-2">
         Biggest challenge
         <textarea
           required
-          className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+          className="mt-2 min-h-28 w-full border-2 border-slate-950 bg-white px-3 py-3 text-base font-bold normal-case tracking-normal text-slate-950 outline-none focus:bg-sky-50"
           value={form.mainChallenge}
           onChange={(e) => setForm((s) => ({ ...s, mainChallenge: e.target.value }))}
         />
       </label>
       <div className="md:col-span-2">
-        <Button type="submit">Book My Free Audit</Button>
+        <Button type="submit" className="border-2 border-slate-950 bg-slate-950 text-white shadow-[5px_5px_0_#38bdf8]">
+          Book My Free Audit
+        </Button>
       </div>
     </form>
   )
