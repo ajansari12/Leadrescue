@@ -43,7 +43,7 @@ export function AuditForm({ onSubmit }: Props) {
   if (submitted) {
     return (
       <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-sm text-emerald-900 shadow-glass">
-        <p className="text-base font-semibold">Thank you — your Lead Leakage Audit request is in.</p>
+        <p className="text-base font-semibold">Thank you - your Lead Leakage Audit request is in.</p>
         <p className="mt-2">We will review your current inquiry flow and follow up with next steps shortly.</p>
       </div>
     )
