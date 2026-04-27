@@ -1,7 +1,7 @@
 import { ArrowRight, CheckCircle2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { MarketingShell } from '../components/MarketingShell'
-import { workflowModules } from '../data/leadRescue'
+import { appModules, workflowModules } from '../data/leadRescue'
 
 export function HowItWorksPage() {
   return (
@@ -44,6 +44,21 @@ export function HowItWorksPage() {
               <div key={item} className="lift-card flex items-center gap-3 border-2 border-slate-950 bg-white p-5">
                 <CheckCircle2 className="h-6 w-6 text-sky-500" />
                 <p className="text-2xl font-black">{item}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-slate-950 py-14 text-white">
+        <div className="mx-auto max-w-7xl px-4">
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-lime-300">App modules</p>
+          <h2 className="mt-2 max-w-3xl text-5xl font-black leading-none">The workflow becomes software.</h2>
+          <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {appModules.map((module) => (
+              <div key={module.title} className="border-2 border-white bg-white/10 p-5">
+                <h3 className="text-2xl font-black">{module.title}</h3>
+                <p className="mt-2 font-semibold text-slate-300">{module.body}</p>
               </div>
             ))}
           </div>

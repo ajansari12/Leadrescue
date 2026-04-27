@@ -1,10 +1,10 @@
-import { ArrowRight, BellRing, CalendarCheck2, CheckCircle2, ClipboardCheck, MessageSquareText, PhoneIncoming, Send, Target, TrendingUp, Users, Zap, type LucideIcon } from 'lucide-react'
+import { ArrowRight, BellRing, CalendarCheck2, CheckCircle2, ClipboardCheck, LayoutDashboard, MessageSquareText, PhoneIncoming, Send, Target, TrendingUp, Users, Zap, type LucideIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { AuditForm, type AuditSubmission } from '../components/AuditForm'
 import { PricingCard } from '../components/PricingCard'
 import { SiteNav } from '../components/SiteNav'
 import { Button } from '../components/ui/Button'
-import { industryExamples } from '../data/leadRescue'
+import { appModules, industryExamples } from '../data/leadRescue'
 
 type ScenarioKey = 'home' | 'health' | 'professional'
 
@@ -22,6 +22,13 @@ const journey = [
   { icon: BellRing, label: 'Follow-up runs', note: 'No silent drop-off' },
 ]
 
+const proofPoints = [
+  { label: 'Fastest first response', value: '< 5 min' },
+  { label: 'Recommended follow-up', value: '5 touches' },
+  { label: 'Typical launch sprint', value: '7 days' },
+  { label: 'Primary team view', value: '1 route map' },
+]
+
 export function LeadRescuePage() {
   const [submissions, setSubmissions] = useState<AuditSubmission[]>([])
   const [scenario, setScenario] = useState<ScenarioKey>('home')
@@ -36,6 +43,7 @@ export function LeadRescuePage() {
     const projectedRecovered = Math.round(rescuedLeads * averageJob * (activeScenario.closeRate / 100))
     return { monthlyLeakage, annualLeakage: monthlyLeakage * 12, rescuedLeads, projectedRecovered }
   }, [activeScenario.closeRate, averageJob, missedRate, monthlyLeads])
+  const recommendedPackage = audit.monthlyLeakage > 9000 || averageJob > 1800 ? 'Premium' : audit.monthlyLeakage > 3500 ? 'Growth' : 'Starter'
 
   const selectScenario = (key: ScenarioKey) => {
     setScenario(key)
@@ -98,6 +106,30 @@ export function LeadRescuePage() {
         </div>
       </section>
 
+      <section className="border-b-2 border-slate-950 bg-slate-950 py-14 text-white">
+        <div className="mx-auto grid max-w-7xl gap-6 px-4 lg:grid-cols-[0.9fr_1.1fr]">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-lime-300">Before / after</p>
+            <h2 className="mt-2 text-5xl font-black leading-none">Same lead. Different route.</h2>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <JourneyPanel title="Before LeadRescue" tone="bad" items={['Lead arrives', 'No owner sees it', 'Reply comes late', 'Buyer moves on']} />
+            <JourneyPanel title="After LeadRescue" tone="good" items={['Lead captured', 'Reply fires', 'Intent sorted', 'Next step booked']} />
+          </div>
+        </div>
+      </section>
+
+      <section className="border-b-2 border-slate-950 bg-white py-12">
+        <div className="mx-auto grid max-w-7xl gap-4 px-4 md:grid-cols-4">
+          {proofPoints.map((point) => (
+            <div key={point.label} className="border-2 border-slate-950 bg-white p-5 shadow-[5px_5px_0_#e2e8f0]">
+              <p className="text-4xl font-black">{point.value}</p>
+              <p className="mt-2 text-sm font-black uppercase tracking-[0.14em] text-slate-500">{point.label}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       <section id="audit-studio" className="paper-field border-b-2 border-slate-950 py-14">
         <div className="mx-auto max-w-7xl px-4">
           <SectionTitle eyebrow="Interactive" title="Estimate the leak in 30 seconds." />
@@ -132,7 +164,27 @@ export function LeadRescuePage() {
                 <Result icon={Users} label="Rescue first" value={`${audit.rescuedLeads} leads`} />
                 <Result icon={ClipboardCheck} label="Recovery signal" value={`CAD $${audit.projectedRecovered.toLocaleString()}`} />
               </div>
+              <div className="mt-5 border-2 border-lime-300 bg-lime-300 p-4 text-slate-950">
+                <p className="text-xs font-black uppercase tracking-[0.16em]">Recommended route</p>
+                <p className="mt-2 text-3xl font-black">{recommendedPackage} package</p>
+                <p className="mt-2 font-bold">First workflow: capture source, reply instantly, route booking, then run 5-touch follow-up.</p>
+              </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-b-2 border-slate-950 bg-white py-14">
+        <div className="mx-auto max-w-7xl px-4">
+          <SectionTitle eyebrow="App foundation" title="What we will build next." />
+          <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {appModules.map((module) => (
+              <div key={module.title} className="border-2 border-slate-950 bg-white p-5 shadow-[6px_6px_0_#e2e8f0]">
+                <LayoutDashboard className="h-7 w-7 text-sky-500" />
+                <h3 className="mt-5 text-2xl font-black">{module.title}</h3>
+                <p className="mt-2 font-semibold text-slate-600">{module.body}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -188,6 +240,26 @@ export function LeadRescuePage() {
         </div>
       </section>
 
+      <section className="border-t-2 border-slate-950 bg-sky-100 py-12">
+        <div className="mx-auto max-w-7xl px-4">
+          <SectionTitle eyebrow="After the audit" title="The handoff is simple." />
+          <div className="mt-8 grid gap-4 md:grid-cols-4">
+            {[
+              ['1', 'Leak map', 'We identify where leads stall or vanish.'],
+              ['2', 'First route', 'We pick the highest-impact workflow to install first.'],
+              ['3', 'Build sprint', 'We configure capture, replies, routing, and follow-up.'],
+              ['4', 'Go live', 'Your team gets a working response path and clear next actions.'],
+            ].map(([number, title, body]) => (
+              <div key={title} className="border-2 border-slate-950 bg-white p-5 shadow-[5px_5px_0_#0f172a]">
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-lime-300 text-lg font-black">{number}</span>
+                <h3 className="mt-5 text-2xl font-black">{title}</h3>
+                <p className="mt-2 font-semibold text-slate-600">{body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="bg-slate-950 py-14 text-white">
         <div className="mx-auto max-w-7xl px-4">
           <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
@@ -231,6 +303,24 @@ function MapNode({ className, color, title, note }: { className: string; color: 
     <div className={`absolute ${className} lead-drift min-w-32 border-2 border-slate-950 ${color} px-4 py-4 shadow-[5px_5px_0_#0f172a]`}>
       <p className="text-xs font-black uppercase leading-none tracking-[0.16em]">{title}</p>
       <p className="mt-2 text-base font-black leading-none">{note}</p>
+    </div>
+  )
+}
+
+function JourneyPanel({ title, items, tone }: { title: string; items: string[]; tone: 'bad' | 'good' }) {
+  const accent = tone === 'good' ? 'bg-lime-300 text-slate-950' : 'bg-orange-300 text-slate-950'
+
+  return (
+    <div className="border-2 border-white bg-white/10 p-5">
+      <h3 className={`inline-flex px-3 py-2 text-sm font-black uppercase tracking-[0.14em] ${accent}`}>{title}</h3>
+      <div className="mt-5 grid gap-3">
+        {items.map((item, index) => (
+          <div key={item} className="grid grid-cols-[36px_1fr] items-center gap-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full border border-white/30 text-sm font-black">{index + 1}</span>
+            <span className="font-bold text-slate-100">{item}</span>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

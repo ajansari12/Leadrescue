@@ -45,6 +45,12 @@ export function ExamplesPage() {
                   </div>
                   <p className="mt-3 text-lg font-black">&quot;{example.exampleMessage}&quot;</p>
                 </div>
+                <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                  <span className="border-2 border-slate-950 bg-lime-300 px-3 py-2 text-xs font-black uppercase">Package: {example.packageFit}</span>
+                  <span className="border-2 border-slate-950 bg-white px-3 py-2 text-xs font-black uppercase">{example.metric}</span>
+                  <span className="border-2 border-slate-950 bg-orange-200 px-3 py-2 text-xs font-black uppercase">Outcome path</span>
+                </div>
+                <p className="mt-4 font-semibold text-slate-700">{example.result}</p>
               </article>
             )
           })}

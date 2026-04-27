@@ -23,6 +23,11 @@ export function IndustriesPage() {
                 <h2 className="mt-5 text-3xl font-black">{example.industry}</h2>
                 <p className="mt-4 text-sm font-black uppercase tracking-[0.14em] text-slate-500">Route</p>
                 <p className="mt-2 font-semibold text-slate-700">{example.workflow.slice(0, 3).join(' -> ')}</p>
+                <div className="mt-5 grid grid-cols-2 gap-2">
+                  <span className="border-2 border-slate-950 bg-lime-300 px-3 py-2 text-xs font-black uppercase">Fit: {example.packageFit}</span>
+                  <span className="border-2 border-slate-950 bg-sky-100 px-3 py-2 text-xs font-black uppercase">{example.metric}</span>
+                </div>
+                <p className="mt-4 text-sm font-bold text-slate-600">{example.leakage}</p>
                 <Link to="/leadrescue-ai/examples" className="mt-5 inline-flex items-center text-sm font-black text-slate-950">
                   See card <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
