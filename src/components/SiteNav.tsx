@@ -14,7 +14,7 @@ const links: NavLink[] = [
   { href: '/leadrescue-ai/industries', label: 'Markets', icon: BriefcaseBusiness },
   { href: '/leadrescue-ai/examples', label: 'Examples', icon: FileText },
   { href: '/leadrescue-ai#packages', label: 'Pricing', icon: CreditCard },
-  { href: '/leadrescue-ai/app', label: 'App', icon: LayoutDashboard },
+  { href: '/app', label: 'App', icon: LayoutDashboard },
 ]
 
 export function SiteNav() {

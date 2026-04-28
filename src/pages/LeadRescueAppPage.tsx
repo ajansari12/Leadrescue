@@ -1,14 +1,13 @@
 import {
+  ArrowLeft,
   BellRing,
   CalendarCheck2,
   CheckCircle2,
   ChevronRight,
   ClipboardList,
-  Clock3,
   Filter,
   Inbox,
   LayoutDashboard,
-  MapPinned,
   MessageSquareText,
   MoveRight,
   PlayCircle,
@@ -19,12 +18,11 @@ import {
   Sparkles,
   Target,
   TrendingUp,
-  Users,
   type LucideIcon,
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useMemo, useState } from 'react'
-import { SiteNav } from '../components/SiteNav'
+import { Link } from 'react-router-dom'
 
 type Stage = 'Captured' | 'Qualified' | 'Booked' | 'Follow-up' | 'Won'
 type Urgency = 'Low' | 'Medium' | 'High'
@@ -223,9 +221,9 @@ export function LeadRescueAppPage() {
 
   return (
     <main className="min-h-screen bg-slate-100 text-slate-950">
-      <SiteNav />
+      <AppHeader />
       <div className="mx-auto grid max-w-7xl gap-4 px-4 py-5 md:grid-cols-[220px_1fr] xl:grid-cols-[260px_1fr]">
-        <aside className="h-fit border-2 border-slate-950 bg-white p-3 shadow-[6px_6px_0_#0f172a] md:sticky md:top-24">
+        <aside className="h-fit border-2 border-slate-950 bg-white p-3 shadow-[6px_6px_0_#0f172a] md:sticky md:top-20">
           <div className="border-2 border-slate-950 bg-lime-300 p-4">
             <div className="flex items-center gap-2">
               <RadioTower className="h-5 w-5" />
@@ -302,6 +300,35 @@ export function LeadRescueAppPage() {
         </section>
       </div>
     </main>
+  )
+}
+
+function AppHeader() {
+  return (
+    <header className="sticky top-0 z-40 border-b-2 border-slate-950 bg-slate-950 text-white">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center border-2 border-white bg-lime-300 text-slate-950 shadow-[4px_4px_0_#38bdf8]">
+            <RadioTower className="h-6 w-6" />
+          </div>
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-lime-300">LeadRescue</p>
+            <h1 className="text-xl font-black leading-none">Response Workspace</h1>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="border border-white/20 bg-white/10 px-3 py-2">
+            <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-300">Mode</p>
+            <p className="text-sm font-black">Demo command center</p>
+          </div>
+          <Link to="/leadrescue-ai" className="inline-flex items-center gap-2 border-2 border-white bg-white px-3 py-2 text-sm font-black text-slate-950 transition hover:bg-lime-300">
+            <ArrowLeft className="h-4 w-4" />
+            Public site
+          </Link>
+        </div>
+      </div>
+    </header>
   )
 }
 
@@ -493,7 +520,7 @@ function LeadActionDock({
   onReplySent: () => void
 }) {
   return (
-    <aside className="h-fit border-2 border-slate-950 bg-white p-4 shadow-[6px_6px_0_#0f172a] 2xl:sticky 2xl:top-24">
+    <aside className="h-fit border-2 border-slate-950 bg-white p-4 shadow-[6px_6px_0_#0f172a] 2xl:sticky 2xl:top-20">
       <div className="grid gap-3 border-2 border-slate-950 bg-sky-100 p-4 sm:grid-cols-[1fr_auto] sm:items-start">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Selected lead</p>
