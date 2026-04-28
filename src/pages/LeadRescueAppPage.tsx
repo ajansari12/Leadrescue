@@ -2,165 +2,50 @@ import {
   ArrowLeft,
   BellRing,
   CalendarCheck2,
+  Cable,
   CheckCircle2,
   ChevronRight,
   ClipboardList,
+  Database,
+  FileText,
   Filter,
   Inbox,
+  KeyRound,
   LayoutDashboard,
+  Mail,
   MessageSquareText,
   MoveRight,
-  PlayCircle,
+  Plus,
   RadioTower,
+  Save,
+  Search,
   Send,
   Settings2,
   ShieldCheck,
   Sparkles,
   Target,
   TrendingUp,
+  Users,
   type LucideIcon,
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useMemo, useState, type FormEvent } from 'react'
+import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
+import { initialAppState } from '../app/sampleData'
+import { stages, type AppState, type AutomationRule, type Integration, type Lead, type Plan, type Sequence, type Stage, type Template, type Urgency } from '../app/types'
+import { usePersistentState } from '../hooks/usePersistentState'
 
-type Stage = 'Captured' | 'Qualified' | 'Booked' | 'Follow-up' | 'Won'
-type Urgency = 'Low' | 'Medium' | 'High'
-type ViewKey = 'command' | 'pipeline' | 'rules' | 'sequences' | 'templates' | 'reports'
+type AppRouteKey = 'command' | 'leads' | 'pipeline' | 'automations' | 'templates' | 'integrations' | 'reports' | 'settings'
 
-type Lead = {
-  id: string
-  name: string
-  business: string
-  industry: string
-  source: string
-  channel: string
-  arrived: string
-  service: string
-  area: string
-  stage: Stage
-  value: number
-  urgency: Urgency
-  owner: string
-  temperature: number
-  nextAction: string
-  reply: string
-  tags: string[]
-  conversation: string[]
-}
-
-const stages: Stage[] = ['Captured', 'Qualified', 'Booked', 'Follow-up', 'Won']
-
-const initialLeads: Lead[] = [
-  {
-    id: 'LR-1042',
-    name: 'Maya Chen',
-    business: 'Homeowner',
-    industry: 'Roofing',
-    source: 'Missed call',
-    channel: 'Phone',
-    arrived: '2 min ago',
-    service: 'Emergency leak inspection',
-    area: 'Mississauga',
-    stage: 'Captured',
-    value: 1800,
-    urgency: 'High',
-    owner: 'Dispatch',
-    temperature: 94,
-    nextAction: 'Request address and leak status',
-    reply: 'Thanks for reaching out. Can you share the property address and whether there is active leaking right now?',
-    tags: ['Storm lead', 'Needs address', 'Fast reply'],
-    conversation: ['Missed call detected', 'Caller asked for same-day help', 'No address captured yet'],
-  },
-  {
-    id: 'LR-1043',
-    name: 'Dr. Singh',
-    business: 'Clinic inquiry',
-    industry: 'Clinics',
-    source: 'Website form',
-    channel: 'Form',
-    arrived: '8 min ago',
-    service: 'Appointment request',
-    area: 'Toronto',
-    stage: 'Qualified',
-    value: 450,
-    urgency: 'Medium',
-    owner: 'Front desk',
-    temperature: 78,
-    nextAction: 'Offer callback windows',
-    reply: 'We can help. Which service are you looking for, and do mornings or afternoons work better?',
-    tags: ['New patient', 'Callback', 'Service unknown'],
-    conversation: ['Form submitted', 'Asked for earliest available appointment', 'Phone number validated'],
-  },
-  {
-    id: 'LR-1044',
-    name: 'Rafael Ortiz',
-    business: 'Renovation prospect',
-    industry: 'Renovation',
-    source: 'Instagram DM',
-    channel: 'DM',
-    arrived: '21 min ago',
-    service: 'Kitchen remodel',
-    area: 'Oakville',
-    stage: 'Booked',
-    value: 5200,
-    urgency: 'Medium',
-    owner: 'Sales',
-    temperature: 84,
-    nextAction: 'Confirm discovery call',
-    reply: 'What space are you renovating, and what timeline are you hoping for?',
-    tags: ['High value', 'Discovery booked', 'Design scope'],
-    conversation: ['DM received', 'Budget range shared', 'Discovery slot held for tomorrow'],
-  },
-  {
-    id: 'LR-1045',
-    name: 'Amelia Brooks',
-    business: 'Cleaning quote',
-    industry: 'Cleaning',
-    source: 'Quote form',
-    channel: 'Form',
-    arrived: '44 min ago',
-    service: 'Recurring cleaning',
-    area: 'Brampton',
-    stage: 'Follow-up',
-    value: 320,
-    urgency: 'Low',
-    owner: 'Ops',
-    temperature: 61,
-    nextAction: 'Send reminder 2',
-    reply: 'Is this a one-time clean or recurring service, and how many rooms should we include?',
-    tags: ['Price shopper', 'Reminder due', 'Recurring'],
-    conversation: ['Quote form submitted', 'Touch 1 sent', 'No reply after 18 hours'],
-  },
-  {
-    id: 'LR-1046',
-    name: 'Nadia Patel',
-    business: 'HVAC homeowner',
-    industry: 'HVAC',
-    source: 'Google Ads form',
-    channel: 'Ad',
-    arrived: '1 hr ago',
-    service: 'No heat call',
-    area: 'Etobicoke',
-    stage: 'Captured',
-    value: 950,
-    urgency: 'High',
-    owner: 'Dispatch',
-    temperature: 89,
-    nextAction: 'Route to emergency queue',
-    reply: 'Is this no heat right now, and is anyone vulnerable in the home? We can route this as priority if needed.',
-    tags: ['Emergency', 'No heat', 'Priority'],
-    conversation: ['Ad form captured', 'Selected no heat', 'Postal code inside service area'],
-  },
-]
-
-const views: { key: ViewKey; label: string; icon: LucideIcon }[] = [
-  { key: 'command', label: 'Command', icon: RadioTower },
-  { key: 'pipeline', label: 'Pipeline', icon: LayoutDashboard },
-  { key: 'rules', label: 'Rules', icon: Settings2 },
-  { key: 'sequences', label: 'Sequences', icon: BellRing },
-  { key: 'templates', label: 'Templates', icon: ClipboardList },
-  { key: 'reports', label: 'Reports', icon: Target },
+const appViews: { key: AppRouteKey; label: string; path: string; icon: LucideIcon }[] = [
+  { key: 'command', label: 'Command', path: '/app', icon: RadioTower },
+  { key: 'leads', label: 'Leads', path: '/app/leads', icon: Inbox },
+  { key: 'pipeline', label: 'Pipeline', path: '/app/pipeline', icon: LayoutDashboard },
+  { key: 'automations', label: 'Automations', path: '/app/automations', icon: BellRing },
+  { key: 'templates', label: 'Templates', path: '/app/templates', icon: ClipboardList },
+  { key: 'integrations', label: 'Integrations', path: '/app/integrations', icon: Cable },
+  { key: 'reports', label: 'Reports', path: '/app/reports', icon: Target },
+  { key: 'settings', label: 'Settings', path: '/app/settings', icon: Settings2 },
 ]
 
 const stageColor: Record<Stage, string> = {
@@ -177,125 +62,176 @@ const urgencyColor: Record<Urgency, string> = {
   Low: 'bg-slate-100',
 }
 
+const planColor: Record<Plan, string> = {
+  Starter: 'bg-sky-100',
+  Growth: 'bg-lime-300',
+  Premium: 'bg-orange-200',
+}
+
+const integrationStatusColor: Record<Integration['status'], string> = {
+  Ready: 'bg-lime-300',
+  'Needs credentials': 'bg-orange-200',
+  Planned: 'bg-sky-100',
+}
+
+type DraftLead = {
+  name: string
+  business: string
+  industry: string
+  source: string
+  channel: string
+  service: string
+  area: string
+  value: string
+  urgency: Urgency
+}
+
+const emptyDraftLead: DraftLead = {
+  name: '',
+  business: '',
+  industry: 'Roofing',
+  source: 'Website form',
+  channel: 'Form',
+  service: '',
+  area: '',
+  value: '',
+  urgency: 'Medium',
+}
+
 export function LeadRescueAppPage() {
-  const [leads, setLeads] = useState(initialLeads)
-  const [activeView, setActiveView] = useState<ViewKey>('command')
-  const [selectedLeadId, setSelectedLeadId] = useState(initialLeads[0].id)
-  const [sourceFilter, setSourceFilter] = useState('All')
-  const [urgencyFilter, setUrgencyFilter] = useState('All')
+  const [appState, setAppState] = usePersistentState<AppState>('leadrescue-app-state-v3', initialAppState)
+  const [selectedLeadId, setSelectedLeadId] = useState(appState.leads[0]?.id ?? '')
+  const location = useLocation()
 
-  const selectedLead = leads.find((lead) => lead.id === selectedLeadId) ?? leads[0]
-  const sources = useMemo(() => ['All', ...Array.from(new Set(leads.map((lead) => lead.source)))], [leads])
-  const urgencyOptions = ['All', 'High', 'Medium', 'Low']
+  const selectedLead = appState.leads.find((lead) => lead.id === selectedLeadId) ?? appState.leads[0]
+  const activeKey = getActiveKey(location.pathname)
+  const metrics = useMemo(() => getMetrics(appState), [appState])
 
-  const filteredLeads = leads
-    .filter((lead) => sourceFilter === 'All' || lead.source === sourceFilter)
-    .filter((lead) => urgencyFilter === 'All' || lead.urgency === urgencyFilter)
-    .sort((a, b) => b.temperature - a.temperature)
-
-  const totalValue = leads.reduce((sum, lead) => sum + lead.value, 0)
-  const shortValue = totalValue >= 1000 ? `CAD $${(totalValue / 1000).toFixed(1)}k` : `CAD $${totalValue.toLocaleString()}`
-  const hotLeadCount = leads.filter((lead) => lead.urgency === 'High').length
-  const bookedCount = leads.filter((lead) => lead.stage === 'Booked' || lead.stage === 'Won').length
-  const avgTemperature = Math.round(leads.reduce((sum, lead) => sum + lead.temperature, 0) / leads.length)
+  const updateLead = (leadId: string, updater: (lead: Lead) => Lead) => {
+    setAppState((current) => ({
+      ...current,
+      leads: current.leads.map((lead) => (lead.id === leadId ? updater(lead) : lead)),
+    }))
+  }
 
   const stageLead = (leadId: string, stage: Stage) => {
-    setLeads((current) => current.map((lead) => (lead.id === leadId ? { ...lead, stage } : lead)))
+    updateLead(leadId, (lead) => ({
+      ...lead,
+      stage,
+      conversation: [`Stage changed to ${stage}`, ...lead.conversation],
+    }))
   }
 
   const moveForward = () => {
+    if (!selectedLead) return
     const index = stages.indexOf(selectedLead.stage)
     const next = stages[Math.min(index + 1, stages.length - 1)]
     stageLead(selectedLead.id, next)
   }
 
   const markReplySent = () => {
-    setLeads((current) =>
-      current.map((lead) =>
-        lead.id === selectedLead.id
-          ? { ...lead, stage: lead.stage === 'Captured' ? 'Qualified' : lead.stage, conversation: ['Reply sent from LeadRescue', ...lead.conversation] }
-          : lead,
-      ),
-    )
+    if (!selectedLead) return
+    updateLead(selectedLead.id, (lead) => ({
+      ...lead,
+      stage: lead.stage === 'Captured' ? 'Qualified' : lead.stage,
+      conversation: ['Reply marked as sent in workspace', ...lead.conversation],
+    }))
+  }
+
+  const addLead = (draft: DraftLead) => {
+    const newLead: Lead = {
+      id: `LR-${Math.floor(2000 + Math.random() * 7999)}`,
+      name: draft.name.trim(),
+      business: draft.business.trim() || 'New inquiry',
+      industry: draft.industry,
+      source: draft.source,
+      channel: draft.channel,
+      arrived: 'Just now',
+      service: draft.service.trim(),
+      area: draft.area.trim(),
+      stage: 'Captured',
+      value: Number(draft.value) || 0,
+      urgency: draft.urgency,
+      owner: draft.urgency === 'High' ? 'Dispatch' : 'Sales',
+      temperature: draft.urgency === 'High' ? 91 : draft.urgency === 'Medium' ? 74 : 55,
+      nextAction: 'Review intake and send first reply',
+      reply: createSuggestedReply(draft),
+      tags: [draft.industry, draft.source, draft.urgency],
+      conversation: ['Lead manually created in workspace'],
+      notes: ['New lead added during demo session.'],
+    }
+
+    setAppState((current) => ({ ...current, leads: [newLead, ...current.leads] }))
+    setSelectedLeadId(newLead.id)
+  }
+
+  const toggleAutomation = (ruleId: string) => {
+    setAppState((current) => ({
+      ...current,
+      automations: current.automations.map((rule) => (rule.id === ruleId ? { ...rule, status: rule.status === 'Active' ? 'Paused' : 'Active' } : rule)),
+    }))
+  }
+
+  const saveWorkspace = (workspace: AppState['workspace']) => {
+    setAppState((current) => ({ ...current, workspace }))
+  }
+
+  const resetDemo = () => {
+    setAppState(initialAppState)
+    setSelectedLeadId(initialAppState.leads[0].id)
   }
 
   return (
     <main className="min-h-screen bg-slate-100 text-slate-950">
-      <AppHeader />
+      <AppHeader workspaceName={appState.workspace.company} plan={appState.workspace.plan} />
       <div className="mx-auto grid max-w-7xl gap-4 px-4 py-5 md:grid-cols-[220px_1fr] xl:grid-cols-[260px_1fr]">
-        <aside className="h-fit border-2 border-slate-950 bg-white p-3 shadow-[6px_6px_0_#0f172a] md:sticky md:top-20">
-          <div className="border-2 border-slate-950 bg-lime-300 p-4">
-            <div className="flex items-center gap-2">
-              <RadioTower className="h-5 w-5" />
-              <p className="text-xs font-black uppercase tracking-[0.16em]">LeadRescue OS</p>
-            </div>
-            <h1 className="mt-2 text-2xl font-black leading-none xl:text-3xl">Response control</h1>
-          </div>
-          <nav className="mt-3 grid gap-2">
-            {views.map((view) => {
-              const Icon = view.icon
-              return (
-                <button
-                  key={view.key}
-                  onClick={() => setActiveView(view.key)}
-                  className={`group flex items-center justify-between gap-3 border-2 px-3 py-3 text-left text-sm font-black transition ${
-                    activeView === view.key ? 'border-slate-950 bg-slate-950 text-white' : 'border-slate-200 bg-white hover:border-slate-950'
-                  }`}
-                >
-                  <span className="flex items-center gap-3">
-                    <Icon className="h-4 w-4" />
-                    {view.label}
-                  </span>
-                  <ChevronRight className="h-4 w-4 opacity-50 transition group-hover:translate-x-0.5" />
-                </button>
-              )
-            })}
-          </nav>
-          <div className="mt-3 border-2 border-slate-950 bg-sky-100 p-3">
-            <p className="text-xs font-black uppercase tracking-[0.14em]">Next build layer</p>
-            <p className="mt-2 text-sm font-bold text-slate-700">Connectors, auth, real CRM sync, and AI-generated replies will sit behind this interface.</p>
-          </div>
-        </aside>
+        <AppSidebar activeKey={activeKey} workspace={appState.workspace} />
 
         <section className="min-w-0 grid gap-4">
-          <AppTopBar selectedLead={selectedLead} avgTemperature={avgTemperature} />
-
-          <div className="grid gap-3 md:grid-cols-4">
-            <Metric icon={Inbox} label="Open" value={`${leads.length}`} detail={`${hotLeadCount} high priority`} />
-            <Metric icon={TrendingUp} label="Pipeline" value={shortValue} detail="Sample workspace" />
-            <Metric icon={CalendarCheck2} label="Booked" value={`${bookedCount}`} detail="Ready for handoff" />
-            <Metric icon={RadioTower} label="Heat" value={`${avgTemperature}`} detail="Lead index" />
-          </div>
+          <WorkspaceBanner selectedLead={selectedLead} metrics={metrics} workspace={appState.workspace} />
+          <MetricStrip metrics={metrics} />
 
           <AnimatePresence mode="wait">
-            {activeView === 'command' ? (
-              <motion.div key="command" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="grid gap-4">
-                <CommandCenter
-                  leads={filteredLeads}
-                  selectedLead={selectedLead}
-                  sources={sources}
-                  urgencyOptions={urgencyOptions}
-                  sourceFilter={sourceFilter}
-                  urgencyFilter={urgencyFilter}
-                  onSourceFilter={setSourceFilter}
-                  onUrgencyFilter={setUrgencyFilter}
-                  onSelect={setSelectedLeadId}
-                  onMoveForward={moveForward}
-                  onStage={stageLead}
-                  onReplySent={markReplySent}
+            <motion.div key={activeKey} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
+              <Routes>
+                <Route
+                  index
+                  element={
+                    <CommandScreen
+                      appState={appState}
+                      selectedLead={selectedLead}
+                      selectedLeadId={selectedLeadId}
+                      onSelectLead={setSelectedLeadId}
+                      onMoveForward={moveForward}
+                      onStageLead={stageLead}
+                      onReplySent={markReplySent}
+                    />
+                  }
                 />
-              </motion.div>
-            ) : null}
-
-            {activeView === 'pipeline' ? (
-              <motion.div key="pipeline" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
-                <Pipeline leads={leads} onSelect={setSelectedLeadId} />
-              </motion.div>
-            ) : null}
-            {activeView === 'rules' ? <motion.div key="rules" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}><RulesView /></motion.div> : null}
-            {activeView === 'sequences' ? <motion.div key="sequences" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}><SequencesView /></motion.div> : null}
-            {activeView === 'templates' ? <motion.div key="templates" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}><TemplatesView /></motion.div> : null}
-            {activeView === 'reports' ? <motion.div key="reports" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}><ReportsView leads={leads} /></motion.div> : null}
+                <Route
+                  path="leads"
+                  element={
+                    <LeadsScreen
+                      leads={appState.leads}
+                      selectedLead={selectedLead}
+                      selectedLeadId={selectedLeadId}
+                      onSelectLead={setSelectedLeadId}
+                      onAddLead={addLead}
+                      onMoveForward={moveForward}
+                      onStageLead={stageLead}
+                      onReplySent={markReplySent}
+                    />
+                  }
+                />
+                <Route path="pipeline" element={<PipelineScreen leads={appState.leads} onSelectLead={setSelectedLeadId} onStageLead={stageLead} />} />
+                <Route path="automations" element={<AutomationsScreen rules={appState.automations} sequences={appState.sequences} onToggle={toggleAutomation} />} />
+                <Route path="templates" element={<TemplatesScreen templates={appState.templates} />} />
+                <Route path="integrations" element={<IntegrationsScreen integrations={appState.integrations} />} />
+                <Route path="reports" element={<ReportsScreen appState={appState} metrics={metrics} />} />
+                <Route path="settings" element={<SettingsScreen workspace={appState.workspace} onSave={saveWorkspace} onReset={resetDemo} />} />
+                <Route path="*" element={<Navigate to="/app" replace />} />
+              </Routes>
+            </motion.div>
           </AnimatePresence>
         </section>
       </div>
@@ -303,7 +239,7 @@ export function LeadRescueAppPage() {
   )
 }
 
-function AppHeader() {
+function AppHeader({ workspaceName, plan }: { workspaceName: string; plan: Plan }) {
   return (
     <header className="sticky top-0 z-40 border-b-2 border-slate-950 bg-slate-950 text-white">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3">
@@ -318,9 +254,9 @@ function AppHeader() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div className="border border-white/20 bg-white/10 px-3 py-2">
-            <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-300">Mode</p>
-            <p className="text-sm font-black">Demo command center</p>
+          <div className="hidden border border-white/20 bg-white/10 px-3 py-2 sm:block">
+            <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-300">{plan} workspace</p>
+            <p className="text-sm font-black">{workspaceName}</p>
           </div>
           <Link to="/leadrescue-ai" className="inline-flex items-center gap-2 border-2 border-white bg-white px-3 py-2 text-sm font-black text-slate-950 transition hover:bg-lime-300">
             <ArrowLeft className="h-4 w-4" />
@@ -332,66 +268,527 @@ function AppHeader() {
   )
 }
 
-function AppTopBar({ selectedLead, avgTemperature }: { selectedLead: Lead; avgTemperature: number }) {
+function AppSidebar({ activeKey, workspace }: { activeKey: AppRouteKey; workspace: AppState['workspace'] }) {
+  return (
+    <aside className="h-fit border-2 border-slate-950 bg-white p-3 shadow-[6px_6px_0_#0f172a] md:sticky md:top-20">
+      <div className="border-2 border-slate-950 bg-lime-300 p-4">
+        <div className="flex items-center gap-2">
+          <RadioTower className="h-5 w-5" />
+          <p className="text-xs font-black uppercase tracking-[0.16em]">LeadRescue OS</p>
+        </div>
+        <h1 className="mt-2 text-2xl font-black leading-none xl:text-3xl">Response control</h1>
+      </div>
+
+      <nav className="mt-3 grid gap-2">
+        {appViews.map((view) => {
+          const Icon = view.icon
+          const active = activeKey === view.key
+          return (
+            <Link
+              key={view.key}
+              to={view.path}
+              className={`group flex items-center justify-between gap-3 border-2 px-3 py-3 text-left text-sm font-black transition ${
+                active ? 'border-slate-950 bg-slate-950 text-white' : 'border-slate-200 bg-white hover:border-slate-950'
+              }`}
+            >
+              <span className="flex items-center gap-3">
+                <Icon className="h-4 w-4" />
+                {view.label}
+              </span>
+              <ChevronRight className="h-4 w-4 opacity-50 transition group-hover:translate-x-0.5" />
+            </Link>
+          )
+        })}
+      </nav>
+
+      <div className="mt-3 border-2 border-slate-950 bg-sky-100 p-3">
+        <p className="text-xs font-black uppercase tracking-[0.14em]">SLA target</p>
+        <p className="mt-1 text-3xl font-black">{workspace.responseTargetMinutes} min</p>
+        <p className="mt-2 text-sm font-bold text-slate-700">{workspace.defaultBookingType}</p>
+      </div>
+    </aside>
+  )
+}
+
+function WorkspaceBanner({ selectedLead, metrics, workspace }: { selectedLead?: Lead; metrics: ReturnType<typeof getMetrics>; workspace: AppState['workspace'] }) {
   return (
     <div className="grid gap-3 border-2 border-slate-950 bg-white p-3 shadow-[6px_6px_0_#e2e8f0] lg:grid-cols-[1fr_auto] lg:items-center">
       <div>
         <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-600">Live workspace</p>
         <h2 className="mt-1 text-3xl font-black leading-none md:text-4xl">Every lead has a next move.</h2>
       </div>
-      <div className="grid gap-2 sm:grid-cols-2 lg:w-[340px]">
-        <StatusPill icon={ShieldCheck} label="System" value="Routing on" />
-        <StatusPill icon={Target} label="Focus" value={`${selectedLead.name} / ${avgTemperature}`} />
+      <div className="grid gap-2 sm:grid-cols-2 lg:w-[360px]">
+        <StatusPill icon={ShieldCheck} label="System" value={`${workspace.plan} / routing on`} />
+        <StatusPill icon={Target} label="Focus" value={`${selectedLead?.name ?? 'No lead'} / ${metrics.avgTemperature}`} />
       </div>
     </div>
   )
 }
 
-function CommandCenter({
-  leads,
+function MetricStrip({ metrics }: { metrics: ReturnType<typeof getMetrics> }) {
+  return (
+    <div className="grid gap-3 md:grid-cols-4">
+      <Metric icon={Inbox} label="Open" value={`${metrics.openLeads}`} detail={`${metrics.hotLeads} high priority`} />
+      <Metric icon={TrendingUp} label="Pipeline" value={metrics.shortValue} detail="Active opportunity" />
+      <Metric icon={CalendarCheck2} label="Booked" value={`${metrics.bookedCount}`} detail="Ready for handoff" />
+      <Metric icon={RadioTower} label="Heat" value={`${metrics.avgTemperature}`} detail="Lead index" />
+    </div>
+  )
+}
+
+function CommandScreen({
+  appState,
   selectedLead,
-  sources,
-  urgencyOptions,
-  sourceFilter,
-  urgencyFilter,
-  onSourceFilter,
-  onUrgencyFilter,
-  onSelect,
+  selectedLeadId,
+  onSelectLead,
   onMoveForward,
-  onStage,
+  onStageLead,
   onReplySent,
 }: {
-  leads: Lead[]
-  selectedLead: Lead
-  sources: string[]
-  urgencyOptions: string[]
-  sourceFilter: string
-  urgencyFilter: string
-  onSourceFilter: (value: string) => void
-  onUrgencyFilter: (value: string) => void
-  onSelect: (id: string) => void
+  appState: AppState
+  selectedLead?: Lead
+  selectedLeadId: string
+  onSelectLead: (id: string) => void
   onMoveForward: () => void
-  onStage: (leadId: string, stage: Stage) => void
+  onStageLead: (leadId: string, stage: Stage) => void
   onReplySent: () => void
 }) {
+  const hotLeads = appState.leads.filter((lead) => lead.urgency === 'High' || lead.temperature >= 85).sort((a, b) => b.temperature - a.temperature)
+
   return (
     <div className="grid gap-4 2xl:grid-cols-[0.95fr_1.05fr]">
       <div className="grid gap-4">
-        <RescueMap selectedLead={selectedLead} />
-        <LeadQueue
-          leads={leads}
-          selectedLead={selectedLead}
-          sources={sources}
-          urgencyOptions={urgencyOptions}
-          sourceFilter={sourceFilter}
-          urgencyFilter={urgencyFilter}
-          onSourceFilter={onSourceFilter}
-          onUrgencyFilter={onUrgencyFilter}
-          onSelect={onSelect}
-        />
+        {selectedLead ? <RescueMap selectedLead={selectedLead} /> : <EmptyPanel title="No selected lead" body="Create or select a lead to activate the command route." />}
+        <LeadQueue leads={hotLeads} selectedLeadId={selectedLeadId} onSelect={onSelectLead} title="Priority queue" subtitle="Hot leads and urgent routes" />
       </div>
-      <LeadActionDock lead={selectedLead} onMoveForward={onMoveForward} onStage={onStage} onReplySent={onReplySent} />
+      {selectedLead ? (
+        <LeadActionDock lead={selectedLead} onMoveForward={onMoveForward} onStage={onStageLead} onReplySent={onReplySent} />
+      ) : (
+        <EmptyPanel title="No lead selected" body="The action dock appears once a lead is selected." />
+      )}
     </div>
+  )
+}
+
+function LeadsScreen({
+  leads,
+  selectedLead,
+  selectedLeadId,
+  onSelectLead,
+  onAddLead,
+  onMoveForward,
+  onStageLead,
+  onReplySent,
+}: {
+  leads: Lead[]
+  selectedLead?: Lead
+  selectedLeadId: string
+  onSelectLead: (id: string) => void
+  onAddLead: (draft: DraftLead) => void
+  onMoveForward: () => void
+  onStageLead: (leadId: string, stage: Stage) => void
+  onReplySent: () => void
+}) {
+  const [query, setQuery] = useState('')
+  const [sourceFilter, setSourceFilter] = useState('All')
+  const [urgencyFilter, setUrgencyFilter] = useState('All')
+  const sources = useMemo(() => ['All', ...Array.from(new Set(leads.map((lead) => lead.source)))], [leads])
+  const filteredLeads = leads
+    .filter((lead) => sourceFilter === 'All' || lead.source === sourceFilter)
+    .filter((lead) => urgencyFilter === 'All' || lead.urgency === urgencyFilter)
+    .filter((lead) => [lead.name, lead.business, lead.industry, lead.service, lead.area].join(' ').toLowerCase().includes(query.toLowerCase()))
+    .sort((a, b) => b.temperature - a.temperature)
+
+  return (
+    <div className="grid gap-4 2xl:grid-cols-[1fr_410px]">
+      <div className="grid gap-4">
+        <AddLeadForm onAddLead={onAddLead} />
+        <section className="border-2 border-slate-950 bg-white p-4 shadow-[6px_6px_0_#e2e8f0]">
+          <div className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-end">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Lead inbox</p>
+              <h2 className="text-3xl font-black">Captured opportunities</h2>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <SearchControl value={query} onChange={setQuery} />
+              <SelectControl icon={Filter} label="Source" value={sourceFilter} options={sources} onChange={setSourceFilter} />
+              <SelectControl icon={RadioTower} label="Urgency" value={urgencyFilter} options={['All', 'High', 'Medium', 'Low']} onChange={setUrgencyFilter} />
+            </div>
+          </div>
+          <div className="mt-4 grid gap-3">
+            {filteredLeads.map((lead) => (
+              <LeadRow key={lead.id} lead={lead} active={lead.id === selectedLeadId} onClick={() => onSelectLead(lead.id)} />
+            ))}
+            {filteredLeads.length === 0 ? <EmptyPanel title="No matching leads" body="Change filters or add a new lead to this workspace." /> : null}
+          </div>
+        </section>
+      </div>
+      {selectedLead ? (
+        <LeadActionDock lead={selectedLead} onMoveForward={onMoveForward} onStage={onStageLead} onReplySent={onReplySent} />
+      ) : (
+        <EmptyPanel title="No lead selected" body="Select a lead to review reply, notes, timeline, and stage controls." />
+      )}
+    </div>
+  )
+}
+
+function AddLeadForm({ onAddLead }: { onAddLead: (draft: DraftLead) => void }) {
+  const [draft, setDraft] = useState(emptyDraftLead)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+
+  const update = (key: keyof DraftLead, value: string) => {
+    setDraft((current) => ({ ...current, [key]: value }))
+    setError('')
+    setSuccess('')
+  }
+
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+
+    if (!draft.name.trim() || !draft.service.trim() || !draft.area.trim()) {
+      setError('Name, service, and area are required.')
+      return
+    }
+
+    onAddLead(draft)
+    setSuccess(`${draft.name.trim()} was added to the lead inbox.`)
+    setDraft(emptyDraftLead)
+    setError('')
+  }
+
+  return (
+    <form onSubmit={submit} className="border-2 border-slate-950 bg-lime-300 p-4 shadow-[6px_6px_0_#0f172a]">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.16em]">Create lead</p>
+          <h2 className="text-3xl font-black">Manual intake</h2>
+        </div>
+        <button type="submit" className="inline-flex items-center gap-2 border-2 border-slate-950 bg-slate-950 px-4 py-3 text-sm font-black text-white shadow-[4px_4px_0_#38bdf8]">
+          <Plus className="h-4 w-4" />
+          Add lead
+        </button>
+      </div>
+
+      <div className="mt-4 grid gap-3 md:grid-cols-3">
+        <TextInput label="Name" value={draft.name} onChange={(value) => update('name', value)} />
+        <TextInput label="Business" value={draft.business} onChange={(value) => update('business', value)} />
+        <TextInput label="Service" value={draft.service} onChange={(value) => update('service', value)} />
+        <TextInput label="Area" value={draft.area} onChange={(value) => update('area', value)} />
+        <TextInput label="Value" value={draft.value} onChange={(value) => update('value', value.replace(/[^0-9]/g, ''))} />
+        <label className="grid gap-1 text-sm font-black">
+          Urgency
+          <select className="border-2 border-slate-950 bg-white px-3 py-2" value={draft.urgency} onChange={(event) => update('urgency', event.target.value)}>
+            <option>High</option>
+            <option>Medium</option>
+            <option>Low</option>
+          </select>
+        </label>
+      </div>
+      {error ? <p className="mt-3 border-2 border-slate-950 bg-white px-3 py-2 text-sm font-black text-slate-950">{error}</p> : null}
+      {success ? <p className="mt-3 border-2 border-slate-950 bg-white px-3 py-2 text-sm font-black text-slate-950">{success}</p> : null}
+    </form>
+  )
+}
+
+function PipelineScreen({ leads, onSelectLead, onStageLead }: { leads: Lead[]; onSelectLead: (id: string) => void; onStageLead: (leadId: string, stage: Stage) => void }) {
+  const navigate = useNavigate()
+
+  return (
+    <div className="grid gap-3 xl:grid-cols-5">
+      {stages.map((stage) => {
+        const stageLeads = leads.filter((lead) => lead.stage === stage)
+        const stageValue = stageLeads.reduce((sum, lead) => sum + lead.value, 0)
+        return (
+          <div key={stage} className="min-h-[420px] border-2 border-slate-950 bg-white p-3 shadow-[4px_4px_0_#e2e8f0]">
+            <div className={`border-2 border-slate-950 p-3 ${stageColor[stage]}`}>
+              <h2 className="text-lg font-black">{stage}</h2>
+              <p className="text-xs font-black uppercase tracking-[0.12em]">{stageLeads.length} leads / CAD ${stageValue.toLocaleString()}</p>
+            </div>
+            <div className="mt-3 grid gap-2">
+              {stageLeads.map((lead) => (
+                <button
+                  key={lead.id}
+                  onClick={() => {
+                    onSelectLead(lead.id)
+                    navigate('/app/leads')
+                  }}
+                  className="border-2 border-slate-200 bg-slate-50 p-3 text-left transition hover:border-slate-950"
+                >
+                  <p className="font-black">{lead.name}</p>
+                  <p className="text-sm font-semibold text-slate-600">{lead.industry}</p>
+                  <div className="mt-3 flex items-center justify-between gap-2">
+                    <span className="text-sm font-black">CAD ${lead.value.toLocaleString()}</span>
+                    <span className="border-2 border-slate-950 bg-white px-2 py-1 text-xs font-black">{lead.temperature}</span>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-1">
+                    {stages.filter((nextStage) => nextStage !== stage).slice(0, 2).map((nextStage) => (
+                      <span
+                        key={nextStage}
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          onStageLead(lead.id, nextStage)
+                        }}
+                        className="border-2 border-slate-950 bg-white px-2 py-1 text-center text-[10px] font-black hover:bg-lime-200"
+                      >
+                        {nextStage}
+                      </span>
+                    ))}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function AutomationsScreen({ rules, sequences, onToggle }: { rules: AutomationRule[]; sequences: Sequence[]; onToggle: (id: string) => void }) {
+  return (
+    <div className="grid gap-4 xl:grid-cols-[1fr_0.78fr]">
+      <section className="border-2 border-slate-950 bg-white p-5 shadow-[6px_6px_0_#e2e8f0]">
+        <SectionHeading eyebrow="Rules" title="Response automations" />
+        <div className="mt-5 grid gap-3">
+          {rules.map((rule) => (
+            <div key={rule.id} className="grid gap-3 border-2 border-slate-200 bg-slate-50 p-4 lg:grid-cols-[1fr_auto] lg:items-center">
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-xl font-black">{rule.name}</h3>
+                  <PlanBadge plan={rule.plan} />
+                </div>
+                <p className="mt-2 text-sm font-bold text-slate-600">When: {rule.trigger}</p>
+                <p className="mt-1 text-sm font-bold text-slate-600">Then: {rule.action}</p>
+              </div>
+              <button onClick={() => onToggle(rule.id)} className={`border-2 border-slate-950 px-4 py-3 text-sm font-black ${rule.status === 'Active' ? 'bg-lime-300' : 'bg-white'}`}>
+                {rule.status}
+              </button>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="border-2 border-slate-950 bg-slate-950 p-5 text-white shadow-[6px_6px_0_#38bdf8]">
+        <SectionHeading eyebrow="Sequences" title="Follow-up paths" inverted />
+        <div className="mt-5 grid gap-3">
+          {sequences.map((sequence) => (
+            <div key={sequence.id} className="border-2 border-white/20 bg-white/10 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-xl font-black">{sequence.name}</h3>
+                <span className="border border-lime-300 px-2 py-1 text-xs font-black text-lime-300">{sequence.status}</span>
+              </div>
+              <p className="mt-1 text-sm font-bold text-slate-300">{sequence.audience}</p>
+              <div className="mt-4 grid gap-2">
+                {sequence.touches.map((touch, index) => (
+                  <div key={touch} className="grid grid-cols-[34px_1fr] items-center gap-2">
+                    <span className="flex h-8 w-8 items-center justify-center border border-white/20 text-xs font-black">{index + 1}</span>
+                    <span className="font-bold">{touch}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  )
+}
+
+function TemplatesScreen({ templates }: { templates: Template[] }) {
+  return (
+    <section className="border-2 border-slate-950 bg-white p-5 shadow-[6px_6px_0_#e2e8f0]">
+      <SectionHeading eyebrow="Templates" title="Industry workflows" />
+      <div className="mt-5 grid gap-4 md:grid-cols-2">
+        {templates.map((template) => (
+          <div key={template.id} className="border-2 border-slate-950 bg-slate-50 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-2xl font-black">{template.industry}</h3>
+              <PlanBadge plan={template.plan} />
+            </div>
+            <p className="mt-3 font-bold text-slate-600">{template.goal}</p>
+            <div className="mt-4 grid gap-2">
+              {template.questions.map((question) => (
+                <div key={question} className="flex items-center gap-2 border-2 border-slate-200 bg-white px-3 py-2">
+                  <CheckCircle2 className="h-4 w-4 text-sky-500" />
+                  <span className="text-sm font-black">{question}</span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 border-2 border-slate-950 bg-lime-300 p-3">
+              <p className="text-xs font-black uppercase tracking-[0.14em]">First reply</p>
+              <p className="mt-2 font-bold">{template.reply}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function IntegrationsScreen({ integrations }: { integrations: Integration[] }) {
+  const readyCount = integrations.filter((integration) => integration.status === 'Ready').length
+  const credentialCount = integrations.filter((integration) => integration.status === 'Needs credentials').length
+  const plannedCount = integrations.filter((integration) => integration.status === 'Planned').length
+
+  return (
+    <div className="grid gap-4 xl:grid-cols-[1fr_0.78fr]">
+      <section className="border-2 border-slate-950 bg-white p-5 shadow-[6px_6px_0_#e2e8f0]">
+        <SectionHeading eyebrow="Integrations" title="Production connection map" />
+        <div className="mt-5 grid gap-3 md:grid-cols-3">
+          <ReportCard label="Ready" value={`${readyCount}`} />
+          <ReportCard label="Needs credentials" value={`${credentialCount}`} />
+          <ReportCard label="Planned" value={`${plannedCount}`} />
+        </div>
+
+        <div className="mt-5 grid gap-3">
+          {integrations.map((integration) => (
+            <div key={integration.id} className="grid gap-3 border-2 border-slate-200 bg-slate-50 p-4 lg:grid-cols-[42px_1fr_auto] lg:items-start">
+              <div className="flex h-10 w-10 items-center justify-center border-2 border-slate-950 bg-white">
+                <IntegrationIcon category={integration.category} />
+              </div>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-xl font-black">{integration.name}</h3>
+                  <PlanBadge plan={integration.plan} />
+                  <span className={`border-2 border-slate-950 px-2 py-1 text-xs font-black ${integrationStatusColor[integration.status]}`}>{integration.status}</span>
+                </div>
+                <p className="mt-2 text-sm font-bold leading-6 text-slate-600">{integration.purpose}</p>
+                <p className="mt-2 text-sm font-black text-slate-950">Next: {integration.nextStep}</p>
+              </div>
+              <span className="border-2 border-slate-950 bg-white px-4 py-3 text-center text-sm font-black">
+                {integration.status === 'Ready' ? 'Ready to enable' : 'Connect later'}
+              </span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="border-2 border-slate-950 bg-slate-950 p-5 text-white shadow-[6px_6px_0_#38bdf8]">
+        <SectionHeading eyebrow="Backend handoff" title="What connects next" inverted />
+        <div className="mt-5 grid gap-3">
+          {[
+            ['Auth first', 'Protect /app before any customer data enters the system.'],
+            ['Database second', 'Persist leads, events, rules, messages, and workspace settings.'],
+            ['Messaging third', 'Wire SMS/email only after consent, opt-out, and approval rules are clear.'],
+            ['AI last-mile', 'Use OpenAI for drafts and summaries with human approval before send.'],
+          ].map(([title, body]) => (
+            <div key={title} className="border-2 border-white/20 bg-white/10 p-4">
+              <p className="font-black text-lime-300">{title}</p>
+              <p className="mt-2 text-sm font-bold leading-6 text-slate-300">{body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  )
+}
+
+function ReportsScreen({ appState, metrics }: { appState: AppState; metrics: ReturnType<typeof getMetrics> }) {
+  const sourceRows = Array.from(new Set(appState.leads.map((lead) => lead.source))).map((source) => {
+    const leads = appState.leads.filter((lead) => lead.source === source)
+    return {
+      source,
+      count: leads.length,
+      value: leads.reduce((sum, lead) => sum + lead.value, 0),
+      heat: Math.round(leads.reduce((sum, lead) => sum + lead.temperature, 0) / leads.length),
+    }
+  })
+
+  return (
+    <div className="grid gap-4 xl:grid-cols-[1fr_0.78fr]">
+      <section className="border-2 border-slate-950 bg-white p-5 shadow-[6px_6px_0_#e2e8f0]">
+        <SectionHeading eyebrow="Reports" title="Revenue recovery snapshot" />
+        <div className="mt-5 grid gap-3 md:grid-cols-2">
+          <ReportCard label="Total opportunity" value={`CAD $${metrics.totalValue.toLocaleString()}`} />
+          <ReportCard label="Booked or won" value={`CAD $${metrics.rescuedValue.toLocaleString()}`} />
+          <ReportCard label="High priority" value={`${metrics.hotLeads} leads`} />
+          <ReportCard label="Response target" value={`${appState.workspace.responseTargetMinutes} min`} />
+        </div>
+        <div className="mt-5 border-2 border-slate-950 bg-slate-50 p-4">
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Source performance</p>
+          <div className="mt-3 grid gap-2">
+            {sourceRows.map((row) => (
+              <div key={row.source} className="grid gap-2 border-2 border-slate-200 bg-white p-3 md:grid-cols-[1fr_auto_auto_auto] md:items-center">
+                <p className="font-black">{row.source}</p>
+                <p className="text-sm font-bold text-slate-600">{row.count} leads</p>
+                <p className="text-sm font-bold text-slate-600">CAD ${row.value.toLocaleString()}</p>
+                <p className="border-2 border-slate-950 bg-lime-300 px-2 py-1 text-center text-xs font-black">{row.heat} heat</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="border-2 border-slate-950 bg-lime-300 p-5 shadow-[6px_6px_0_#0f172a]">
+        <SectionHeading eyebrow="Executive brief" title="What to fix first" />
+        <div className="mt-5 grid gap-3">
+          {[
+            'Keep missed-call and high-urgency rules active.',
+            'Route emergency services to Dispatch before Sales.',
+            'Use the quote nudge sequence for quiet qualified leads.',
+            'Convert the highest-value template into the first live workflow.',
+          ].map((item) => (
+            <div key={item} className="flex items-start gap-2 border-2 border-slate-950 bg-white p-3">
+              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-sky-500" />
+              <p className="font-black">{item}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  )
+}
+
+function SettingsScreen({ workspace, onSave, onReset }: { workspace: AppState['workspace']; onSave: (workspace: AppState['workspace']) => void; onReset: () => void }) {
+  const [draft, setDraft] = useState({
+    ...workspace,
+    serviceAreasText: workspace.serviceAreas.join(', '),
+    ownersText: workspace.owners.join(', '),
+  })
+  const [saved, setSaved] = useState(false)
+
+  const save = () => {
+    onSave({
+      company: draft.company,
+      plan: draft.plan,
+      responseTargetMinutes: Number(draft.responseTargetMinutes) || 5,
+      serviceAreas: splitCsv(draft.serviceAreasText),
+      owners: splitCsv(draft.ownersText),
+      defaultBookingType: draft.defaultBookingType,
+    })
+    setSaved(true)
+  }
+
+  return (
+    <section className="border-2 border-slate-950 bg-white p-5 shadow-[6px_6px_0_#e2e8f0]">
+      <SectionHeading eyebrow="Settings" title="Workspace setup" />
+      <div className="mt-5 grid gap-4 lg:grid-cols-2">
+        <TextInput label="Company" value={draft.company} onChange={(value) => setDraft((current) => ({ ...current, company: value }))} />
+        <label className="grid gap-1 text-sm font-black">
+          Plan
+          <select className="border-2 border-slate-950 bg-white px-3 py-2" value={draft.plan} onChange={(event) => setDraft((current) => ({ ...current, plan: event.target.value as Plan }))}>
+            <option>Starter</option>
+            <option>Growth</option>
+            <option>Premium</option>
+          </select>
+        </label>
+        <TextInput label="Response target minutes" value={`${draft.responseTargetMinutes}`} onChange={(value) => setDraft((current) => ({ ...current, responseTargetMinutes: Number(value.replace(/[^0-9]/g, '')) }))} />
+        <TextInput label="Default booking type" value={draft.defaultBookingType} onChange={(value) => setDraft((current) => ({ ...current, defaultBookingType: value }))} />
+        <TextArea label="Service areas" value={draft.serviceAreasText} onChange={(value) => setDraft((current) => ({ ...current, serviceAreasText: value }))} />
+        <TextArea label="Owners" value={draft.ownersText} onChange={(value) => setDraft((current) => ({ ...current, ownersText: value }))} />
+      </div>
+      <div className="mt-5 flex flex-wrap gap-3">
+        <button onClick={save} className="inline-flex items-center gap-2 border-2 border-slate-950 bg-slate-950 px-4 py-3 text-sm font-black text-white shadow-[4px_4px_0_#bef264]">
+          <Save className="h-4 w-4" />
+          Save workspace
+        </button>
+        <button onClick={onReset} className="border-2 border-slate-950 bg-white px-4 py-3 text-sm font-black hover:bg-orange-200">
+          Reset demo data
+        </button>
+        {saved ? <p className="border-2 border-slate-950 bg-lime-300 px-4 py-3 text-sm font-black">Workspace saved locally.</p> : null}
+      </div>
+    </section>
   )
 }
 
@@ -433,43 +830,16 @@ function RescueMap({ selectedLead }: { selectedLead: Lead }) {
   )
 }
 
-function LeadQueue({
-  leads,
-  selectedLead,
-  sources,
-  urgencyOptions,
-  sourceFilter,
-  urgencyFilter,
-  onSourceFilter,
-  onUrgencyFilter,
-  onSelect,
-}: {
-  leads: Lead[]
-  selectedLead: Lead
-  sources: string[]
-  urgencyOptions: string[]
-  sourceFilter: string
-  urgencyFilter: string
-  onSourceFilter: (value: string) => void
-  onUrgencyFilter: (value: string) => void
-  onSelect: (id: string) => void
-}) {
+function LeadQueue({ leads, selectedLeadId, onSelect, title, subtitle }: { leads: Lead[]; selectedLeadId: string; onSelect: (id: string) => void; title: string; subtitle: string }) {
   return (
     <section className="border-2 border-slate-950 bg-white p-4 shadow-[6px_6px_0_#e2e8f0]">
-      <div className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-end">
-        <div>
-          <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Priority queue</p>
-          <h2 className="text-3xl font-black">Leads sorted by heat</h2>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <SelectControl icon={Filter} label="Source" value={sourceFilter} options={sources} onChange={onSourceFilter} />
-          <SelectControl icon={RadioTower} label="Urgency" value={urgencyFilter} options={urgencyOptions} onChange={onUrgencyFilter} />
-        </div>
+      <div>
+        <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">{subtitle}</p>
+        <h2 className="text-3xl font-black">{title}</h2>
       </div>
-
       <div className="mt-4 grid gap-3">
         {leads.map((lead) => (
-          <LeadRow key={lead.id} lead={lead} active={lead.id === selectedLead.id} onClick={() => onSelect(lead.id)} />
+          <LeadRow key={lead.id} lead={lead} active={lead.id === selectedLeadId} onClick={() => onSelect(lead.id)} />
         ))}
       </div>
     </section>
@@ -549,20 +919,13 @@ function LeadActionDock({
         </div>
         <p className="mt-3 font-bold leading-7">{lead.reply}</p>
         <button onClick={onReplySent} className="mt-4 inline-flex w-full items-center justify-center gap-2 border-2 border-slate-950 bg-slate-950 px-4 py-3 font-black text-white shadow-[4px_4px_0_#38bdf8]">
-          Send reply <Send className="h-4 w-4" />
+          Mark reply sent <Send className="h-4 w-4" />
         </button>
       </div>
 
-      <div className="mt-4 border-2 border-slate-950 bg-white p-4">
-        <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Handoff brief</p>
-        <div className="mt-3 grid gap-2">
-          {lead.conversation.map((item) => (
-            <div key={item} className="flex items-start gap-2">
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-sky-500" />
-              <p className="text-sm font-bold text-slate-700">{item}</p>
-            </div>
-          ))}
-        </div>
+      <div className="mt-4 grid gap-3">
+        <DetailList title="Handoff brief" items={lead.conversation} icon={CheckCircle2} />
+        <DetailList title="Notes" items={lead.notes} icon={FileText} />
       </div>
 
       <div className="mt-4 grid gap-2">
@@ -578,6 +941,22 @@ function LeadActionDock({
         </div>
       </div>
     </aside>
+  )
+}
+
+function DetailList({ title, items, icon: Icon }: { title: string; items: string[]; icon: LucideIcon }) {
+  return (
+    <div className="border-2 border-slate-950 bg-white p-4">
+      <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">{title}</p>
+      <div className="mt-3 grid gap-2">
+        {items.map((item) => (
+          <div key={item} className="flex items-start gap-2">
+            <Icon className="mt-0.5 h-4 w-4 shrink-0 text-sky-500" />
+            <p className="text-sm font-bold text-slate-700">{item}</p>
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }
 
@@ -606,6 +985,15 @@ function StatusPill({ icon: Icon, label, value }: { icon: LucideIcon; label: str
   )
 }
 
+function SectionHeading({ eyebrow, title, inverted = false }: { eyebrow: string; title: string; inverted?: boolean }) {
+  return (
+    <div>
+      <p className={`text-xs font-black uppercase tracking-[0.16em] ${inverted ? 'text-lime-300' : 'text-sky-600'}`}>{eyebrow}</p>
+      <h2 className={`mt-1 text-3xl font-black leading-none ${inverted ? 'text-white' : 'text-slate-950'}`}>{title}</h2>
+    </div>
+  )
+}
+
 function SelectControl({ icon: Icon, label, value, options, onChange }: { icon: LucideIcon; label: string; value: string; options: string[]; onChange: (value: string) => void }) {
   return (
     <label className="flex items-center gap-2 border-2 border-slate-950 bg-white px-3 py-2 text-sm font-black">
@@ -620,6 +1008,34 @@ function SelectControl({ icon: Icon, label, value, options, onChange }: { icon: 
   )
 }
 
+function SearchControl({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  return (
+    <label className="flex items-center gap-2 border-2 border-slate-950 bg-white px-3 py-2 text-sm font-black">
+      <Search className="h-4 w-4" />
+      <span className="sr-only">Search leads</span>
+      <input value={value} onChange={(event) => onChange(event.target.value)} placeholder="Search" className="w-32 bg-white font-black outline-none" />
+    </label>
+  )
+}
+
+function TextInput({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  return (
+    <label className="grid gap-1 text-sm font-black">
+      {label}
+      <input value={value} onChange={(event) => onChange(event.target.value)} className="border-2 border-slate-950 bg-white px-3 py-2 font-bold outline-none focus:bg-sky-100" />
+    </label>
+  )
+}
+
+function TextArea({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  return (
+    <label className="grid gap-1 text-sm font-black">
+      {label}
+      <textarea value={value} onChange={(event) => onChange(event.target.value)} rows={4} className="border-2 border-slate-950 bg-white px-3 py-2 font-bold outline-none focus:bg-sky-100" />
+    </label>
+  )
+}
+
 function Info({ label, value }: { label: string; value: string }) {
   return (
     <div className="border-2 border-slate-200 p-3">
@@ -629,139 +1045,87 @@ function Info({ label, value }: { label: string; value: string }) {
   )
 }
 
+function EmptyPanel({ title, body }: { title: string; body: string }) {
+  return (
+    <div className="border-2 border-slate-950 bg-white p-5 shadow-[6px_6px_0_#e2e8f0]">
+      <p className="text-xl font-black">{title}</p>
+      <p className="mt-2 font-bold text-slate-600">{body}</p>
+    </div>
+  )
+}
+
 function StageBadge({ stage }: { stage: Stage }) {
   return <span className={`inline-flex border-2 border-slate-950 px-2 py-1 text-xs font-black ${stageColor[stage]}`}>{stage}</span>
 }
 
-function Pipeline({ leads, onSelect }: { leads: Lead[]; onSelect: (id: string) => void }) {
+function PlanBadge({ plan }: { plan: Plan }) {
+  return <span className={`border-2 border-slate-950 px-2 py-1 text-xs font-black ${planColor[plan]}`}>{plan}</span>
+}
+
+function IntegrationIcon({ category }: { category: Integration['category'] }) {
+  const iconMap: Record<Integration['category'], LucideIcon> = {
+    AI: Sparkles,
+    Messaging: Mail,
+    CRM: Users,
+    Calendar: CalendarCheck2,
+    Data: Database,
+    Security: KeyRound,
+  }
+  const Icon = iconMap[category]
+
+  return <Icon className="h-5 w-5 text-sky-500" />
+}
+
+function ReportCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="grid gap-3 xl:grid-cols-5">
-      {stages.map((stage) => {
-        const stageLeads = leads.filter((lead) => lead.stage === stage)
-        return (
-          <div key={stage} className="min-h-[360px] border-2 border-slate-950 bg-white p-3 shadow-[4px_4px_0_#e2e8f0]">
-            <div className={`border-2 border-slate-950 p-3 ${stageColor[stage]}`}>
-              <h2 className="text-lg font-black">{stage}</h2>
-              <p className="text-xs font-black uppercase tracking-[0.12em]">{stageLeads.length} leads</p>
-            </div>
-            <div className="mt-3 grid gap-2">
-              {stageLeads.map((lead) => (
-                <button key={lead.id} onClick={() => onSelect(lead.id)} className="border-2 border-slate-200 bg-slate-50 p-3 text-left hover:border-slate-950">
-                  <p className="font-black">{lead.name}</p>
-                  <p className="text-sm font-semibold text-slate-600">{lead.industry}</p>
-                  <div className="mt-3 flex items-center justify-between gap-2">
-                    <span className="text-sm font-black">CAD ${lead.value.toLocaleString()}</span>
-                    <span className="border-2 border-slate-950 bg-white px-2 py-1 text-xs font-black">{lead.temperature}</span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        )
-      })}
+    <div className="border-2 border-slate-950 bg-slate-50 p-4">
+      <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">{label}</p>
+      <p className="mt-2 text-3xl font-black">{value}</p>
     </div>
   )
 }
 
-function RulesView() {
-  return (
-    <SimpleGrid
-      title="Response rules"
-      icon={Settings2}
-      items={[
-        ['Missed call rescue', 'Trigger owner alert, send SMS draft, create callback task.'],
-        ['Urgency triage', 'High urgency leads jump the queue and show in the action dock.'],
-        ['Service-area match', 'Ask postal code before routing to booking.'],
-        ['Quote intent', 'Collect scope, timeline, and booking preference.'],
-      ]}
-    />
-  )
+function getMetrics(appState: AppState) {
+  const totalValue = appState.leads.reduce((sum, lead) => sum + lead.value, 0)
+  const rescuedValue = appState.leads.filter((lead) => lead.stage === 'Booked' || lead.stage === 'Won').reduce((sum, lead) => sum + lead.value, 0)
+  const hotLeads = appState.leads.filter((lead) => lead.urgency === 'High').length
+  const bookedCount = appState.leads.filter((lead) => lead.stage === 'Booked' || lead.stage === 'Won').length
+  const avgTemperature = appState.leads.length ? Math.round(appState.leads.reduce((sum, lead) => sum + lead.temperature, 0) / appState.leads.length) : 0
+  const shortValue = totalValue >= 1000 ? `CAD $${(totalValue / 1000).toFixed(1)}k` : `CAD $${totalValue.toLocaleString()}`
+
+  return {
+    openLeads: appState.leads.length,
+    totalValue,
+    rescuedValue,
+    shortValue,
+    hotLeads,
+    bookedCount,
+    avgTemperature,
+  }
 }
 
-function SequencesView() {
-  return (
-    <SimpleGrid
-      title="Follow-up sequences"
-      icon={PlayCircle}
-      items={[
-        ['Instant confirmation', 'Set expectation and ask the missing intake question.'],
-        ['Next-step reminder', 'Nudge the buyer toward booking or callback.'],
-        ['Proof touch', 'Send a relevant proof point or service note.'],
-        ['Booking nudge', 'Offer two simple appointment windows.'],
-        ['Close loop', 'Mark quiet leads cleanly and keep the history.'],
-      ]}
-    />
-  )
+function getActiveKey(pathname: string): AppRouteKey {
+  if (pathname.startsWith('/app/leads')) return 'leads'
+  if (pathname.startsWith('/app/pipeline')) return 'pipeline'
+  if (pathname.startsWith('/app/automations')) return 'automations'
+  if (pathname.startsWith('/app/templates')) return 'templates'
+  if (pathname.startsWith('/app/integrations')) return 'integrations'
+  if (pathname.startsWith('/app/reports')) return 'reports'
+  if (pathname.startsWith('/app/settings')) return 'settings'
+  return 'command'
 }
 
-function TemplatesView() {
-  return (
-    <SimpleGrid
-      title="Industry templates"
-      icon={Sparkles}
-      items={[
-        ['Roofing', 'Storm damage, leak status, address, photo request.'],
-        ['Clinics', 'Service type, appointment window, callback preference.'],
-        ['Renovation', 'Scope, budget range, timing, discovery call.'],
-        ['Cleaning', 'Rooms, recurring need, property type, quote follow-up.'],
-        ['HVAC', 'No heat/no cooling, equipment, postal code, dispatcher alert.'],
-        ['Legal', 'Matter type, deadline, document checklist, consult handoff.'],
-      ]}
-    />
-  )
+function createSuggestedReply(draft: DraftLead) {
+  if (draft.urgency === 'High') {
+    return `Thanks for reaching out. Can you share the address in ${draft.area} and confirm whether this needs immediate help?`
+  }
+
+  return `Thanks for reaching out about ${draft.service}. What timeline are you hoping for, and what is the best callback window?`
 }
 
-function ReportsView({ leads }: { leads: Lead[] }) {
-  const rescuedValue = leads.filter((lead) => lead.stage === 'Booked' || lead.stage === 'Won').reduce((sum, lead) => sum + lead.value, 0)
-  const highPriority = leads.filter((lead) => lead.urgency === 'High')
-
-  return (
-    <div className="grid gap-4 lg:grid-cols-[1fr_0.8fr]">
-      <SimpleGrid
-        title="Audit report"
-        icon={Target}
-        items={[
-          ['Leak sources mapped', 'Calls, forms, DMs, ads, and quote requests are visible.'],
-          ['Response risk scored', `${highPriority.length} high-priority leads need fast handling.`],
-          ['Recommended route', 'Capture, qualify, reply, book, follow up.'],
-          ['Team handoff', 'Each lead has owner, next action, value, and conversation notes.'],
-        ]}
-      />
-      <div className="border-2 border-slate-950 bg-lime-300 p-5 shadow-[6px_6px_0_#0f172a]">
-        <p className="text-sm font-black uppercase tracking-[0.16em]">Recovery snapshot</p>
-        <p className="mt-3 text-5xl font-black">CAD ${rescuedValue.toLocaleString()}</p>
-        <p className="mt-2 font-bold">booked or won value represented in the sample workspace.</p>
-        <div className="mt-5 grid gap-2">
-          {['Lead source map', 'Priority queue', 'Reply scripts', 'Pipeline report'].map((item) => (
-            <div key={item} className="flex items-center gap-2 border-2 border-slate-950 bg-white px-3 py-2">
-              <CheckCircle2 className="h-4 w-4" />
-              <span className="font-black">{item}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function SimpleGrid({ title, icon: Icon, items }: { title: string; icon: LucideIcon; items: [string, string][] }) {
-  return (
-    <div className="border-2 border-slate-950 bg-white p-5 shadow-[6px_6px_0_#e2e8f0]">
-      <div className="flex flex-wrap items-center gap-3">
-        <Icon className="h-7 w-7 text-sky-500" />
-        <h2 className="text-3xl font-black">{title}</h2>
-      </div>
-      <div className="mt-5 grid gap-3 md:grid-cols-2">
-        {items.map(([titleText, body]) => (
-          <div key={titleText} className="border-2 border-slate-200 bg-slate-50 p-4">
-            <div className="flex items-center gap-3">
-              <CheckCircle2 className="h-5 w-5 text-sky-500" />
-              <p className="font-black">{titleText}</p>
-            </div>
-            <p className="mt-2 text-sm font-bold leading-6 text-slate-600">{body}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
+function splitCsv(value: string) {
+  return value
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
 }

@@ -13,7 +13,7 @@ export function App() {
       <Route path="/leadrescue-ai/industries" element={<IndustriesPage />} />
       <Route path="/leadrescue-ai/examples" element={<ExamplesPage />} />
       <Route path="/leadrescue-ai/app" element={<Navigate to="/app" replace />} />
-      <Route path="/app" element={<LeadRescueAppPage />} />
+      <Route path="/app/*" element={<LeadRescueAppPage />} />
       <Route path="*" element={<Navigate to="/leadrescue-ai" replace />} />
     </Routes>
   )
