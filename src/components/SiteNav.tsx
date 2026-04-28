@@ -1,4 +1,4 @@
-import { Activity, BriefcaseBusiness, CreditCard, FileText, Home, type LucideIcon } from 'lucide-react'
+import { Activity, BriefcaseBusiness, CreditCard, FileText, Home, LayoutDashboard, type LucideIcon } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { LeadRescueLogo } from './LeadRescueLogo'
 
@@ -14,6 +14,7 @@ const links: NavLink[] = [
   { href: '/leadrescue-ai/industries', label: 'Markets', icon: BriefcaseBusiness },
   { href: '/leadrescue-ai/examples', label: 'Examples', icon: FileText },
   { href: '/leadrescue-ai#packages', label: 'Pricing', icon: CreditCard },
+  { href: '/leadrescue-ai/app', label: 'App', icon: LayoutDashboard },
 ]
 
 export function SiteNav() {
